@@ -1,0 +1,40 @@
+<html>
+<head>
+	<script src="https://s3.amazonaws.com/stitch-sdks/js/library/v3/stable/stitch.min.js"></script>
+	<script type="text/javascript">
+		const clientPromise = stitch.StitchClientFactory.create('ceng495-hw2-ucdhy');
+		let client;
+		let db;
+
+		function connect_db() {
+			clientPromise.then(stitchClient => {
+		       client = stitchClient;
+		       db = client.service('mongodb', 'mongodb-atlas').db('ceng495-hw2')
+		       client.login()
+		   });
+		}
+
+		function submit_user() {
+			var add_user = document.getElementById('add_user');
+			db.collection('user').insertOne({"user_name" : add_user.value,
+											"profile_pic_id" : -1});
+			add_user.value = '';
+		}
+	</script>
+</head>
+
+<body onload="connect_db()">
+	<div id="data_user">
+
+	</div>
+	<div id="add_user_div">
+		<form>
+			User Name: <input id="add_user" type="text" name="user_name"><br>
+			<input type="button" value="Add User" onclick="submit_user()">
+			<input type="button" value="Delete User" onclick="delete_user()">
+			<input type="button" value="Login as User" onclick="login_user()">
+		</form>
+	</div>
+</body>
+
+</html>
