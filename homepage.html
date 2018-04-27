@@ -1,6 +1,7 @@
 <html>
 <head>
 	<script src="https://s3.amazonaws.com/stitch-sdks/js/library/v3/stable/stitch.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script type="text/javascript">
 		const clientPromise = stitch.StitchClientFactory.create('ceng495-hw2-ucdhy');
 		let client;
@@ -15,25 +16,103 @@
 		}
 
 		function submit_user() {
-			var add_user = document.getElementById('add_user');
-			db.collection('user').insertOne({"user_name" : add_user.value,
+			var user_name = document.getElementById('user_name');
+			db.collection('user').insertOne({"user_name" : user_name.value,
 											"profile_pic_id" : -1});
-			add_user.value = '';
+			user_name.value = '';
+		}
+
+		function login_user() {
+			var user_name = document.getElementById('user_name');
+			db.collection('user').findOne({user_name : user_name.value}).then(user => {
+				console.log(user);
+				if (user == null){
+					alert("No user found!");
+					return;
+				}
+				db.collection('photo').find({ $query: {user_name : user.user_name}, $orderby: {add_date: -1}}).then(photos => {
+					db.collection('comment').find({ $query: {user_name : user.user_name}, $orderby: {add_date: -1}}).then(comments => {
+						db.collection('friends').find({$or: [{u_name_1: user.user_name}, {u_name_2: user.user_name}]}).then(friends => {
+							$('#homepage').hide();
+							$('#userpage').show();
+							var comments_elem = document.getElementById('comment_table');
+							comments_elem.innerHTML = '';
+							Array.from(comments).forEach (function(comment) {
+								var row = comments_elem.insertRow(0);
+								var cell = row.insertCell(0);
+								cell.innerHTML = comment.comment_text;
+								// TODO: Add likes
+							});
+							
+							var photos_elem = document.getElementById('photo_table');
+							photos_elem.innerHTML = '';
+							Array.from(photos).forEach (function(photo) {
+								photos_elem.append('<img src="' + photo.link + '">')
+								// TODO: Add likes
+							});
+
+							var friends_elem = document.getElementById('friend_table');
+							friends_elem.innerHTML = '';
+							Array.from(friends).forEach (function(friend) {
+								var friend_user_name = (friend.u_name_1 == user_name.value)? friend.u_name_2: friend.u_name_1;
+								friends_elem.append('<a href="#" onclick="loadFriend(' + friend_user_name + ')">' + friend_user_name + '</a>');
+							});	
+						});
+					});
+				});
+			});
+	
+		}
+
+		function load_friend(user_name) {
+			alert("Friends is called! " + user_name);
+		}
+
+		function delete_user() {
+			var user_name = document.getElementById('user_name');
+			console.log(db.collection('user').remove({user_name : user_name.value}));
+			user_name.value = '';
 		}
 	</script>
 </head>
 
 <body onload="connect_db()">
-	<div id="data_user">
-
-	</div>
-	<div id="add_user_div">
-		<form>
-			User Name: <input id="add_user" type="text" name="user_name"><br>
-			<input type="button" value="Add User" onclick="submit_user()">
-			<input type="button" value="Delete User" onclick="delete_user()">
-			<input type="button" value="Login as User" onclick="login_user()">
-		</form>
+	<div id="main">
+		<div id="homepage">
+			<form>
+				User Name: <input id="user_name" type="text" name="user_name"><br>
+				<input type="button" value="Add User" onclick="submit_user()">
+				<input type="button" value="Delete User" onclick="delete_user()">
+				<input type="button" value="Login as User" onclick="login_user()">
+			</form>
+		</div>
+		<div id="userpage" style="visibility: hidden;">
+			<div id="uname">
+				<label for="uname">User Name: </label>
+				<textarea id="user_name_area" disabled="true"></textarea>
+			</div>
+			<div id="profile_photo">
+				<img id="profile_image">
+			</div>
+			<div id="comments">
+				<table id="comment_table">
+					
+				</table>
+			</div>
+			<div id="photo">
+				<table id="photo_table">
+					
+				</table>
+			</div>
+			<div id="friends">
+				<div id="friend_table">
+					
+				</table>
+			</div>
+		</div>
+		<div id="friendpage" style="visibility: hidden;">
+			
+		</div>
 	</div>
 </body>
 
